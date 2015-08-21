@@ -13,7 +13,7 @@ import re
 import string
 import codecs
 import os
-import admin
+#import admin
 #set admin
 #if not admin.isUserAdmin():
 #	admin.runAsAdmin()
