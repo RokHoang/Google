@@ -7,42 +7,44 @@
 # Example: google Vu Ngoc Minh Hoang
 from urllib2 import urlopen
 from urllib2 import HTTPError
+from urlparse import urlparse
 import urllib2
+import urllib
 import sys
 import re
 import string
 import codecs
 import os
 import argparse
-from bs4 import BeautifulSoup
-import admin
+#from bs4 import BeautifulSoup
+
 #set admin
+import admin
 if not admin.isUserAdmin():
 	admin.runAsAdmin()
 
-sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
-sys.stdin = codecs.getreader('utf_8')(sys.stdin)
-
-
-
+#set default encoding utf-8
+reload(sys).setdefaultencoding('utf8')
 
 def setPath():
     old_path = os.path.dirname(os.path.abspath("__file__")) 
     if not old_path in os.environ['path']:
         path = old_path + ';%PATH%'
         os.system('setx PATH "%s" /M' % path)
-def mergerURL(url, string):
+def mergerQuery(string):
+	query =''
 	for i in range(0,len(string)):
 		print str(string[i])
-		url = url + str(string[i]) + '+'
-	return url
+		query = query + str(string[i]) + '+'
+	return query
 
 if __name__ ==  '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-s","--setup", help="Setup", action="store_true")
-	parser.add_argument("-vn","--vietnamese", help="Vietnamese", action="store_true")
+	parser.add_argument("-vi","--vietnamese", help="Vietnamese", action="store_true")
 	parser.add_argument("-t","--translate", help="Translate to Vietnamese", action="store_true")
-	parser.add_argument("string", type=str, nargs="+",help="Keyword")
+	parser.add_argument("-m","--more", help="Display more results", action="store_true")
+	parser.add_argument("string", type=str, nargs='+', help="Keyword")
 	args = parser.parse_args()
 	
 	#set path
@@ -53,17 +55,22 @@ if __name__ ==  '__main__':
 	#fake the mozilla headers
 	header = {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686; en-US)AppleWebKit/533.2(KHTML, like Gecko) Chrome/5.0.342.7 Safari/533.2'}
 
+	#languages searching
+	if args.vietnamese:
+		lang = "lang_vi"
+	else:
+		lang = "lang_en"
 
 	#merger url
-	if args.vietnamese:
-		url = 'https://www.google.com.vn/search?q='
-	else:
-		url = 'https://www.google.com/search?q='
-	url = mergerURL(url, args.string)
+	query = mergerQuery(args.string)
 
 	#make request
-	req = urllib2.Request(url, headers=header)
+	url = 'https://www.google.com/search?'
+	values = {'start':'1','num':str((args.more+1)*10),'q':query,'lr':lang}
+	data = urllib.urlencode(values)
+	req = urllib2.Request(url + data, headers=header)
 
+	
 	#creat streamreader
 	try:
 		fpage = urlopen(req);
@@ -81,9 +88,9 @@ if __name__ ==  '__main__':
 	fix = re.compile('(<em>)|(</em>)|(&nbsp)|(</span>)|(<span class="f">)|(<wbr>)')
 
 	while True:
-		link = fpage.readline();
+		lnk = fpage.readline();
 		#print link and content
-		if not link:
+		if not lnk:
 			break
 		else:
 			rtitle = ftitle.findall(lnk)
@@ -92,8 +99,7 @@ if __name__ ==  '__main__':
 			if rtitle:
 				for i in range(len(rtitle)):
 					try:
-						sys.stdout.write("[*]" + rtitle[i] + '\n|' + rlink[i] + '\n|' + fix.sub('',rcontent[i]) + '\n')
+						sys.stdout.write("[*]" + rtitle[i] + '\n|' + rlink[i] + '\n|' + fix.sub('',rcontent[i]) + '\n\n' )
 					except Exception, e:
 						pass
-
 	fpage.close()	
