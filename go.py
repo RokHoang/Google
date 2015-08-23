@@ -13,36 +13,53 @@ import re
 import string
 import codecs
 import os
-#import admin
+import argparse
+from bs4 import BeautifulSoup
+import admin
 #set admin
-#if not admin.isUserAdmin():
-#	admin.runAsAdmin()
+if not admin.isUserAdmin():
+	admin.runAsAdmin()
 
 sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 sys.stdin = codecs.getreader('utf_8')(sys.stdin)
+
+
+
 
 def setPath():
     old_path = os.path.dirname(os.path.abspath("__file__")) 
     if not old_path in os.environ['path']:
         path = old_path + ';%PATH%'
         os.system('setx PATH "%s" /M' % path)
-def mergerURL():
-	url = 'https://www.google.com/search?q='
-	for i in range(1,len(sys.argv)):
-		url = url + str(sys.argv[i]) + '+'
+def mergerURL(url, string):
+	for i in range(0,len(string)):
+		print str(string[i])
+		url = url + str(string[i]) + '+'
 	return url
 
 if __name__ ==  '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-s","--setup", help="Setup", action="store_true")
+	parser.add_argument("-vn","--vietnamese", help="Vietnamese", action="store_true")
+	parser.add_argument("-t","--translate", help="Translate to Vietnamese", action="store_true")
+	parser.add_argument("string", type=str, nargs="+",help="Keyword")
+	args = parser.parse_args()
+	
 	#set path
-	if (len(sys.argv)==2 and sys.argv[1]=='setup'):
+	if args.setup:
 		setPath()
 		sys.exit()
 	
 	#fake the mozilla headers
 	header = {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686; en-US)AppleWebKit/533.2(KHTML, like Gecko) Chrome/5.0.342.7 Safari/533.2'}
 
+
 	#merger url
-	url = mergerURL()
+	if args.vietnamese:
+		url = 'https://www.google.com.vn/search?q='
+	else:
+		url = 'https://www.google.com/search?q='
+	url = mergerURL(url, args.string)
 
 	#make request
 	req = urllib2.Request(url, headers=header)
@@ -64,9 +81,9 @@ if __name__ ==  '__main__':
 	fix = re.compile('(<em>)|(</em>)|(&nbsp)|(</span>)|(<span class="f">)|(<wbr>)')
 
 	while True:
-		lnk = fpage.readline();
-		#print lnk
-		if not lnk:
+		link = fpage.readline();
+		#print link and content
+		if not link:
 			break
 		else:
 			rtitle = ftitle.findall(lnk)
